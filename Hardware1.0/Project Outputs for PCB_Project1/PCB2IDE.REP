@@ -1,0 +1,30 @@
+*************************************************************
+FileName = PCB2IDE.GBR
+AutoAperture = True
+*************************************************************
+Generating : Bottom Layer
+      File : PCB2IDE.GBL
+
+    Adding Layer      : Bottom Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D10
+    D11
+    D12
+    D13
+*************************************************************
+
+*************************************************************
+Generating : Keep-Out Layer
+      File : PCB2IDE.GKO
+
+    Adding Layer      : Keep-Out Layer
+
+
+Used DCodes :
+    D14
+*************************************************************
+

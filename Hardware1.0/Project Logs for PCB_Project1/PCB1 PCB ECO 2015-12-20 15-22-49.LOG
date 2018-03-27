@@ -1,0 +1,105 @@
+Added Component: Designator=D1(LED)
+Added Component: Designator=P1(IDE接口封装40PIN)
+Added Component: Designator=P2(8PIN)
+Added Component: Designator=P3(4PIN)
+Added Component: Designator=P4(8PIN)
+Added Component: Designator=P5(8PIN)
+Added Component: Designator=R1(电阻)
+Added Pin To Net: NetName=CS0 Pin=P1-37
+Added Pin To Net: NetName=CS0 Pin=P5-1
+Added Net: Name=CS0
+Added Pin To Net: NetName=CS1 Pin=P1-38
+Added Pin To Net: NetName=CS1 Pin=P5-2
+Added Net: Name=CS1
+Added Pin To Net: NetName=CSEL Pin=P1-28
+Added Pin To Net: NetName=CSEL Pin=P3-2
+Added Net: Name=CSEL
+Added Pin To Net: NetName=D0 Pin=P1-17
+Added Pin To Net: NetName=D0 Pin=P4-1
+Added Net: Name=D0
+Added Pin To Net: NetName=D1 Pin=P1-15
+Added Pin To Net: NetName=D1 Pin=P4-2
+Added Net: Name=D1
+Added Pin To Net: NetName=D2 Pin=P1-13
+Added Pin To Net: NetName=D2 Pin=P4-3
+Added Net: Name=D2
+Added Pin To Net: NetName=D3 Pin=P1-11
+Added Pin To Net: NetName=D3 Pin=P4-4
+Added Net: Name=D3
+Added Pin To Net: NetName=D4 Pin=P1-9
+Added Pin To Net: NetName=D4 Pin=P4-5
+Added Net: Name=D4
+Added Pin To Net: NetName=D5 Pin=P1-7
+Added Pin To Net: NetName=D5 Pin=P4-6
+Added Net: Name=D5
+Added Pin To Net: NetName=D6 Pin=P1-5
+Added Pin To Net: NetName=D6 Pin=P4-7
+Added Net: Name=D6
+Added Pin To Net: NetName=D7 Pin=P1-3
+Added Pin To Net: NetName=D7 Pin=P4-8
+Added Net: Name=D7
+Added Pin To Net: NetName=D8 Pin=P1-4
+Added Pin To Net: NetName=D8 Pin=P2-1
+Added Net: Name=D8
+Added Pin To Net: NetName=D9 Pin=P1-6
+Added Pin To Net: NetName=D9 Pin=P2-2
+Added Net: Name=D9
+Added Pin To Net: NetName=D10 Pin=P1-8
+Added Pin To Net: NetName=D10 Pin=P2-3
+Added Net: Name=D10
+Added Pin To Net: NetName=D11 Pin=P1-10
+Added Pin To Net: NetName=D11 Pin=P2-4
+Added Net: Name=D11
+Added Pin To Net: NetName=D12 Pin=P1-12
+Added Pin To Net: NetName=D12 Pin=P2-5
+Added Net: Name=D12
+Added Pin To Net: NetName=D13 Pin=P1-14
+Added Pin To Net: NetName=D13 Pin=P2-6
+Added Net: Name=D13
+Added Pin To Net: NetName=D14 Pin=P1-16
+Added Pin To Net: NetName=D14 Pin=P2-7
+Added Net: Name=D14
+Added Pin To Net: NetName=D15 Pin=P1-18
+Added Pin To Net: NetName=D15 Pin=P2-8
+Added Net: Name=D15
+Added Pin To Net: NetName=DA0 Pin=P1-35
+Added Pin To Net: NetName=DA0 Pin=P5-3
+Added Net: Name=DA0
+Added Pin To Net: NetName=DA1 Pin=P1-33
+Added Pin To Net: NetName=DA1 Pin=P5-4
+Added Net: Name=DA1
+Added Pin To Net: NetName=DA2 Pin=P1-36
+Added Pin To Net: NetName=DA2 Pin=P5-5
+Added Net: Name=DA2
+Added Pin To Net: NetName=DIOR Pin=P1-25
+Added Pin To Net: NetName=DIOR Pin=P5-7
+Added Net: Name=DIOR
+Added Pin To Net: NetName=DIOW Pin=P1-23
+Added Pin To Net: NetName=DIOW Pin=P5-8
+Added Net: Name=DIOW
+Added Pin To Net: NetName=GND Pin=P1-2
+Added Pin To Net: NetName=GND Pin=P1-19
+Added Pin To Net: NetName=GND Pin=P1-22
+Added Pin To Net: NetName=GND Pin=P1-24
+Added Pin To Net: NetName=GND Pin=P1-26
+Added Pin To Net: NetName=GND Pin=P1-30
+Added Pin To Net: NetName=GND Pin=P1-40
+Added Pin To Net: NetName=GND Pin=P3-1
+Added Net: Name=GND
+Added Pin To Net: NetName=IORDY Pin=P1-27
+Added Pin To Net: NetName=IORDY Pin=P5-6
+Added Net: Name=IORDY
+Added Pin To Net: NetName=NetD1_1 Pin=D1-1
+Added Pin To Net: NetName=NetD1_1 Pin=R1-2
+Added Net: Name=NetD1_1
+Added Pin To Net: NetName=NetD1_2 Pin=D1-2
+Added Pin To Net: NetName=NetD1_2 Pin=P1-39
+Added Net: Name=NetD1_2
+Added Pin To Net: NetName=RESET Pin=P1-1
+Added Pin To Net: NetName=RESET Pin=P3-3
+Added Net: Name=RESET
+Added Pin To Net: NetName=VCC Pin=P3-4
+Added Pin To Net: NetName=VCC Pin=R1-1
+Added Net: Name=VCC
+Added Class: Name=Sheet1
+Added Room: Name=Sheet1

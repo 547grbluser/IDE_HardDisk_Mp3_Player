@@ -1,0 +1,5 @@
+Removed Pin From Net: NetName=CSEL Pin=P3-2
+Removed Pin From Net: NetName=RESET Pin=P3-3
+Added Pin To Net: NetName=RESET Pin=P3-2
+Added Pin To Net: NetName=CSEL Pin=P3-3
+Added Room: Name=Sheet1
