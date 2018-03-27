@@ -1,0 +1,8 @@
+".\bin\main.obj",
+".\bin\ATAPI6.obj",
+".\bin\serial.obj",
+".\bin\vs1003.obj",
+".\bin\deviceio.obj",
+".\bin\znFAT.obj" 
+TO ".\bin\MP3_firmware" 
+PRINT(".\bin\MP3_firmware.m51") RAMSIZE(256) 

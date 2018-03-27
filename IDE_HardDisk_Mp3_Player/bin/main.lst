@@ -1,0 +1,394 @@
+C51 COMPILER V9.52.0.0   MAIN                                                              03/27/2018 22:43:37 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\bin\main.obj
+COMPILER INVOKED BY: C:\Keil_c51\C51\BIN\C51.EXE main.c LARGE BROWSE DEBUG OBJECTEXTEND PRINT(.\bin\main.lst) TABS(2) OB
+                    -JECT(.\bin\main.obj)
+
+line level    source
+
+   1          
+   2          /***********************************
+   3          编译环境：keil c51           *
+   4          工程名字：IDE硬盘扇区读写驱动    *
+   5          版本：v1.02              *
+   6          日期：2015/09/18           *
+   7          作者：康朝阳             *
+   8          QQ:547336083             *
+   9          QQ群:284285453                     *
+  10          主控芯片：STC12C5A60S2         *
+  11          晶振频率：24.00Mhz             *
+  12          适用硬盘：适用ATAPI-6协议的IDE硬盘 *
+  13          ***********************************/
+  14          #include <at89x52.h>
+  15          #include "ATAPI6.h"
+  16          #include "serial.h"
+*** WARNING C312 IN LINE 18 OF serial.h: misplaced endif control
+  17          #include "znFAT/znfat.h"
+  18          #include "vs1003.h"
+  19          #include <intrins.h>
+  20          
+  21          #define PLAY_SONG 0x01
+  22          #define PAUSE_SONG 0x02
+  23          #define IDLE        0x08
+  24          #define OPEN_SONG   0x10
+  25          #define CLOSE_HARD_DISK 0x40
+  26          #define OPEN_HARD_DISK 0x80
+  27          
+  28          #define DEBUG 0
+  29          
+  30          #define BUF_SIZE (192)
+  31          struct znFAT_Init_Args Init_Args; //初始化硬盘参数集合
+  32          struct FileInfo current_mp3_file; //文件信息集合
+  33          
+  34          sbit IrIn=P3^2;
+  35          
+  36          u32 current_mp3_file_index=0;
+  37          u8 com_command=0;
+  38          u8 lr_voice_value=32;
+  39          u32 read_left_bytes=0;
+  40          u8 mp3_buf[BUF_SIZE]={0};
+  41          u32 play_offset=0;
+  42          u8 play_state_machine=OPEN_SONG;
+  43          
+  44          u8 IrVal=0;
+  45          void IrInit();
+  46               
+  47          void main(void)
+  48          {
+  49   1        int res;
+  50   1       
+  51   1        IrInit();
+  52   1        
+  53   1          VS_Reset();
+C51 COMPILER V9.52.0.0   MAIN                                                              03/27/2018 22:43:37 PAGE 2   
+
+  54   1          VS_Sin_Test(200);//测试VS1003好坏
+  55   1          VS_WRITE_Reg(SCI_BASS,0x00,0xf6);  //设置为超重低音
+  56   1        #if DEBUG==1
+                UartInit(); //1200bps@24.000MHz
+                #endif
+  59   1      REINIT:  
+  60   1        #if DEBUG==1
+                  SendStr("Now init HDD...\r\n\r\n");
+                #endif
+  63   1        if(0==znFAT_Device_Init()) //存储设备初始化
+  64   1        {
+  65   2          //硬盘初始化成功
+  66   2          #if DEBUG==1
+                  SendStr("HDD Init is ok\r\n\r\n");
+                  #endif  
+  69   2        }
+  70   1      
+  71   1        znFAT_Select_Device(0,&Init_Args); //选择设备0，也就是硬盘
+  72   1        #if DEBUG==1  
+                SendStr(" Select HDD \r\n\r\n");
+                #endif
+  75   1        res=znFAT_Init(); //文件系统初始化
+  76   1        #if DEBUG==1
+                SendStr(" znFAT init \r\n\r\n");
+                #endif
+  79   1        if(0==res)
+  80   1        {
+  81   2          //文件系统初始化成功
+  82   2          #if DEBUG==1
+                  SendStr("znFAT Init is ok\r\n\r\n");
+                  #endif
+  85   2        }else if(1==res)
+  86   1        {
+  87   2          #if DEBUG==1
+                  SendStr("znFAT Init is fail\r\n\r\n");
+                  #endif
+  90   2          goto REINIT;
+  91   2        } else if(2==res)
+  92   1        {
+  93   2          #if DEBUG==1
+                  SendStr("No found FAT32 \r\n\r\n");
+                  #endif
+  96   2          goto REINIT;
+  97   2        } 
+  98   1      
+  99   1        play_state_machine=OPEN_SONG; //开机打开第一首播放
+ 100   1        #if DEBUG==1
+                SendStr("OPEN_SONG! \r\n\r\n");
+                #endif
+ 103   1        for(;;){
+ 104   2          
+ 105   2          switch(play_state_machine){
+ 106   3            case  IDLE:{
+ 107   4             if(0x07==IrVal){ // 空闲状态可以 上一曲
+ 108   5              IrVal=0;
+ 109   5              if(current_mp3_file_index>1){
+ 110   6              current_mp3_file_index-=2; 
+ 111   6            }else if(current_mp3_file_index==1){
+ 112   6              current_mp3_file_index-=1;
+ 113   6            }else if(current_mp3_file_index==0){
+ 114   6              current_mp3_file_index=0;
+ 115   6            }
+C51 COMPILER V9.52.0.0   MAIN                                                              03/27/2018 22:43:37 PAGE 3   
+
+ 116   5             
+ 117   5            play_offset=0;//播放偏移清零
+ 118   5            play_state_machine=  OPEN_SONG;//进入打开歌曲状态
+ 119   5             }
+ 120   4      
+ 121   4             if(0x45==IrVal){  //打开硬盘     ,空闲状态可以打开硬盘
+ 122   5              play_state_machine= OPEN_HARD_DISK;//打开硬盘
+ 123   5             }
+ 124   4      
+ 125   4          }break;
+ 126   3      
+ 127   3          case OPEN_SONG:{
+ 128   4            if(!znFAT_Open_File(&current_mp3_file,"/music/*.mp3",current_mp3_file_index,1)) {
+ 129   5              current_mp3_file_index++;//打开文件成功,文件索引才自加一  ,为下一曲做准备
+ 130   5              play_state_machine=  PLAY_SONG;//打开成功进入播放状态
+ 131   5              #if DEBUG==1
+                      SendStr("Open mp3 file success!\r\n");
+                      #endif
+ 134   5            } else{
+ 135   5              current_mp3_file_index   =0;//播放到最后一首了,继续从第一首开始播放
+ 136   5              play_state_machine= OPEN_SONG;//  继续从第一首开始播放
+ 137   5              #if DEBUG==1
+                      SendStr("Open mp3 file fail ,replay !\r\n");
+                      #endif
+ 140   5            }
+ 141   4          }break;
+ 142   3      
+ 143   3          case  PLAY_SONG:{
+ 144   4      
+ 145   4              if(read_left_bytes=znFAT_ReadData(&current_mp3_file,play_offset,BUF_SIZE,mp3_buf)){
+ 146   5                u32 i_count=0;
+ 147   5                for(i_count=0;i_count<read_left_bytes;i_count++){
+ 148   6                  VS_Send_Dat(mp3_buf[i_count]);
+ 149   6                }
+ 150   5                play_offset+=  read_left_bytes;
+ 151   5                #if DEBUG==1
+                        SendStr("playing mp3 !\r\n");
+                        #endif
+ 154   5              }else{
+ 155   5                play_offset=0;//播放偏移清零
+ 156   5                play_state_machine=  OPEN_SONG;//播放完了,自动切换下一曲
+ 157   5              }
+ 158   4      
+ 159   4               if(0x40==IrVal){   //加音量
+ 160   5                  IrVal=0;  
+ 161   5                  if(lr_voice_value>0){
+ 162   6                    lr_voice_value-=2;
+ 163   6                }else{
+ 164   6                    lr_voice_value=0;
+ 165   6                }
+ 166   5                VS_WRITE_Reg(VOL_VALUE,lr_voice_value,lr_voice_value);
+ 167   5               }
+ 168   4      
+ 169   4               if(0x19==IrVal){   //减音量
+ 170   5               IrVal=0; 
+ 171   5                 if(lr_voice_value<0xfe){
+ 172   6                 lr_voice_value+=2;
+ 173   6               }
+ 174   5               if(lr_voice_value>=0xfe) {
+ 175   6                lr_voice_value=0xfe;
+ 176   6               }
+ 177   5               VS_WRITE_Reg(VOL_VALUE,lr_voice_value,lr_voice_value);
+C51 COMPILER V9.52.0.0   MAIN                                                              03/27/2018 22:43:37 PAGE 4   
+
+ 178   5               }
+ 179   4               if(0x07==IrVal){ //上一曲
+ 180   5                IrVal=0;
+ 181   5                if(current_mp3_file_index>1){
+ 182   6                current_mp3_file_index-=2; 
+ 183   6              }else if(current_mp3_file_index==1){
+ 184   6                current_mp3_file_index-=1;
+ 185   6              }else if(current_mp3_file_index==0){
+ 186   6                current_mp3_file_index=0;
+ 187   6              }
+ 188   5              znFAT_Close_File(&current_mp3_file); //关闭刚才打开的文件
+ 189   5              VS_Flush_Buffer(); //清空vs1003内部缓冲区
+ 190   5              play_offset=0;//播放偏移清零
+ 191   5              play_state_machine=  OPEN_SONG;//进入打开歌曲状态
+ 192   5               }    
+ 193   4        
+ 194   4               if(0x09==IrVal){  //下一曲
+ 195   5                 IrVal=0;  
+ 196   5                   play_offset=0;//播放偏移清零
+ 197   5                     play_state_machine=   OPEN_SONG;//进入打开歌曲状态
+ 198   5                 VS_Flush_Buffer(); //清空vs1003内部缓冲区
+ 199   5                 znFAT_Close_File(&current_mp3_file);  //关闭刚才打开的文件
+ 200   5               }
+ 201   4               
+ 202   4                if(0x15==IrVal){ //暂停
+ 203   5                IrVal=0;
+ 204   5                play_state_machine=  PAUSE_SONG; //进入暂停状态
+ 205   5      
+ 206   5              }
+ 207   4          }break;
+ 208   3      
+ 209   3          case  PAUSE_SONG:{
+ 210   4                if(0x15==IrVal){   //播放    ,暂停的时候可以进入播放状态
+ 211   5                 IrVal=0;
+ 212   5                 play_state_machine= PLAY_SONG;//进入播放状态
+ 213   5              }
+ 214   4              if(0x45==IrVal){   //close硬盘  ,暂停的时候可以关闭硬盘
+ 215   5                IrVal=0;
+ 216   5                 play_state_machine= CLOSE_HARD_DISK;//关闭硬盘
+ 217   5                }
+ 218   4          }break;
+ 219   3      
+ 220   3       
+ 221   3          case  CLOSE_HARD_DISK:{
+ 222   4              HDStop();
+ 223   4              play_state_machine= IDLE;//关闭硬盘后,进入空闲态
+ 224   4          }break;
+ 225   3      
+ 226   3          case   OPEN_HARD_DISK:{
+ 227   4              HDRunning();  
+ 228   4              play_state_machine = PLAY_SONG; //打开硬盘后,继续播放当前歌曲
+ 229   4          }break;
+ 230   3      
+ 231   3      
+ 232   3          default:{}break;
+ 233   3      
+ 234   3          }
+ 235   2      
+ 236   2        }
+ 237   1      }
+ 238          
+ 239          void usart() interrupt 4
+C51 COMPILER V9.52.0.0   MAIN                                                              03/27/2018 22:43:37 PAGE 5   
+
+ 240          {
+ 241   1        if(RI)
+ 242   1        {
+ 243   2          RI=0;
+ 244   2          com_command=SBUF;
+ 245   2          if(com_command=='R'){
+ 246   3            com_command=0;
+ 247   3            HDRunning();  
+ 248   3          }else if(com_command=='S')
+ 249   2          {
+ 250   3            com_command=0;
+ 251   3            HDStop();
+ 252   3          }
+ 253   2        }else{
+ 254   2          TI=0;
+ 255   2        }
+ 256   1      }
+ 257          
+ 258          
+ 259          
+ 260          void Delay140us()   //@24.000MHz
+ 261          {
+ 262   1        unsigned char i, j;
+ 263   1      
+ 264   1        _nop_();
+ 265   1        _nop_();
+ 266   1        i = 4;
+ 267   1        j = 64;
+ 268   1        do
+ 269   1        {
+ 270   2          while (--j);
+ 271   2        } while (--i);
+ 272   1      }
+ 273          
+ 274          void delay(unsigned int x)
+ 275          {
+ 276   1        while(x)
+ 277   1        {
+ 278   2          Delay140us();
+ 279   2          x--;  
+ 280   2        }
+ 281   1      }
+ 282          
+ 283          void IrInit()
+ 284          {
+ 285   1        IT0=1;//下降沿触发
+ 286   1        EX0=1;//打开中断0允许
+ 287   1        EA=1; //打开总中断
+ 288   1        IrIn=1;//初始化端口
+ 289   1      }
+ 290          
+ 291          void ReadIr() interrupt 0
+ 292          { 
+ 293   1        unsigned char j,k;
+ 294   1        unsigned int err,Time=0;
+ 295   1        unsigned char IrValue[4]={0};
+ 296   1        if(IrIn==0)   //确认是否真的接收到正确的信号
+ 297   1        {  
+ 298   2          
+ 299   2          err=1000;       
+ 300   2        //当两个条件都为真是循环，如果有一个条件为假的时候跳出循环，免得程序出错的时
+ 301   2        //  侯，程序死在这里 
+C51 COMPILER V9.52.0.0   MAIN                                                              03/27/2018 22:43:37 PAGE 6   
+
+ 302   2          while((IrIn==0)&&(err>0)) //等待前面9ms的低电平过去     
+ 303   2          {     
+ 304   3            delay(1);
+ 305   3            err--;
+ 306   3          } 
+ 307   2          if(IrIn==1)     //如果正确等到9ms低电平
+ 308   2          {
+ 309   3            err=500;
+ 310   3            while((IrIn==1)&&(err>0))    //等待4.5ms的起始高电平过去
+ 311   3            {
+ 312   4              delay(1);
+ 313   4              err--;
+ 314   4            }
+ 315   3            for(k=0;k<4;k++)    //共有4组数据
+ 316   3            {       
+ 317   4              for(j=0;j<8;j++)  //接收一组数据
+ 318   4              {
+ 319   5      
+ 320   5                err=60;   
+ 321   5                while((IrIn==0)&&(err>0))//等待信号前面的560us低电平过去
+ 322   5                {
+ 323   6                  delay(1);  //140us
+ 324   6                  err--;
+ 325   6                }
+ 326   5                err=500;
+ 327   5                while((IrIn==1)&&(err>0))  //计算高电平的时间长度。
+ 328   5                {
+ 329   6                  delay(1);//140us
+ 330   6                  Time++;
+ 331   6                  err--;
+ 332   6                  if(Time>30)  
+ 333   6                  {
+ 334   7                    EX0=1;
+ 335   7                    return;
+ 336   7                  }
+ 337   6                }
+ 338   5                IrValue[k]>>=1;  //k表示第几组数据
+ 339   5                if(Time>=8)     //如果高电平出现大于565us，那么是1
+ 340   5                {
+ 341   6                  IrValue[k]|=0x80;
+ 342   6                }
+ 343   5                Time=0;   //用完时间要重新赋值              
+ 344   5              }
+ 345   4            }
+ 346   3          }
+ 347   2          if(IrValue[2]!=~IrValue[3])//如果数据的反码取反后不等于数据码，说明接收数据错误
+ 348   2          {
+ 349   3            return;
+ 350   3          }else{
+ 351   3            IrVal=  IrValue[2];
+ 352   3          }
+ 353   2        }
+ 354   1      }
+ 355          
+ 356           
+ 357          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1484    ----
+   CONSTANT SIZE    =     17    ----
+   XDATA SIZE       =    297      13
+C51 COMPILER V9.52.0.0   MAIN                                                              03/27/2018 22:43:37 PAGE 7   
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

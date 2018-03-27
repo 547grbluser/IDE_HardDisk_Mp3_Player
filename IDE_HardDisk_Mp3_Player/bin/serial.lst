@@ -1,0 +1,83 @@
+C51 COMPILER V9.52.0.0   SERIAL                                                            03/27/2018 22:42:43 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE SERIAL
+OBJECT MODULE PLACED IN .\bin\serial.obj
+COMPILER INVOKED BY: C:\Keil_c51\C51\BIN\C51.EXE serial.c LARGE BROWSE DEBUG OBJECTEXTEND PRINT(.\bin\serial.lst) TABS(2
+                    -) OBJECT(.\bin\serial.obj)
+
+line level    source
+
+   1          #include "serial.h"
+*** WARNING C312 IN LINE 18 OF serial.h: misplaced endif control
+   2          
+   3          sfr AUXR  = 0x8E;
+   4          void UartInit(void)   //1200bps@24.000MHz
+   5          {
+   6   1        PCON &= 0x7F;   //波特率不倍速
+   7   1        SCON = 0x50;    //8位数据,可变波特率
+   8   1        AUXR &= 0xBF;   //定时器1时钟为Fosc/12,即12T
+   9   1        AUXR &= 0xFE;   //串口1选择定时器1为波特率发生器
+  10   1        TMOD &= 0x0F;   //清除定时器1模式位
+  11   1        TMOD |= 0x20;   //设定定时器1为8位自动重装方式
+  12   1        TL1 = 0xCC;   //设定定时初值
+  13   1        TH1 = 0xCC;   //设定定时器重装值
+  14   1        ET1 = 0;    //禁止定时器1中断
+  15   1        TR1 = 1;    //启动定时器1
+  16   1      }
+  17          
+  18          void Serial_Init()    // 11.0592Mhz
+  19          {
+  20   1        TMOD=0X20; //定时器T1使用方式2
+  21   1        TH1=253;   //设定初值
+  22   1        TL1=253;   
+  23   1      
+  24   1      //  TH1=250;   //设定初值
+  25   1      //  TL1=250;   
+  26   1      //  PCON=0X80;  //SMOD=1，波特率加倍
+  27   1      
+  28   1        TR1=1;     //启动定时器T1
+  29   1        SCON=0X50;  //串口工作方式1，波特率9600bit/s ，REN=1允许接收
+  30   1        REN=1;
+  31   1        ES=1;   //打开/关闭串口中断
+  32   1        TI=0;
+  33   1        //PS=1;
+  34   1        EA=1;
+  35   1      }
+  36          
+  37          void SendByte(u8 byt)
+  38          {
+  39   1        ES=0;
+  40   1        SBUF=byt;
+  41   1        while(!TI);
+  42   1        TI=0;
+  43   1        ES=1;
+  44   1      }
+  45          
+  46          void SendStr(u8 *str)
+  47          {
+  48   1      
+  49   1        while(*str!='\0')
+  50   1        {
+  51   2          SendByte(*str);
+  52   2          str++;  
+  53   2        }
+C51 COMPILER V9.52.0.0   SERIAL                                                            03/27/2018 22:42:43 PAGE 2   
+
+  54   1      
+  55   1      
+  56   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     83    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

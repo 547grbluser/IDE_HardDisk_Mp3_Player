@@ -1,0 +1,274 @@
+C51 COMPILER V9.52.0.0   ATAPI6                                                            03/27/2018 22:42:43 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE ATAPI6
+OBJECT MODULE PLACED IN .\bin\ATAPI6.obj
+COMPILER INVOKED BY: C:\Keil_c51\C51\BIN\C51.EXE ATAPI6.C LARGE BROWSE DEBUG OBJECTEXTEND PRINT(.\bin\ATAPI6.lst) TABS(2
+                    -) OBJECT(.\bin\ATAPI6.obj)
+
+line level    source
+
+   1          
+   2          /***********************************
+   3          编译环境：keil c51           *
+   4          工程名字：IDE硬盘扇区读写驱动    *
+   5          版本：v1.02              *
+   6          日期：2015/09/18           *
+   7          作者：康朝阳             *
+   8          QQ:547336083             *
+   9          QQ群:284285453                     *
+  10          主控芯片：STC12C5A60S2         *
+  11          晶振频率：24.00Mhz             *
+  12          适用硬盘：适用ATAPI-6协议的IDE硬盘 *
+  13          ***********************************/
+  14          
+  15          #include "ATAPI6.h"
+  16          
+  17          
+  18          unsigned char ReversalData(unsigned char byReversal)
+  19          {
+  20   1        unsigned char temp;
+  21   1        temp=byReversal<<7;
+  22   1        temp=temp+((byReversal&0x2)<<5);
+  23   1        temp=temp+((byReversal&0x4)<<3);
+  24   1        temp=temp+((byReversal&0x8)<<1);
+  25   1        temp=temp+(byReversal>>7);
+  26   1        temp=temp+((byReversal&0x40)>>5);
+  27   1        temp=temp+((byReversal&0x20)>>3);
+  28   1        temp=temp+((byReversal&0x10)>>1);
+  29   1        return temp;
+  30   1      }
+  31          
+  32          void Delay1ms()   //@11.0592MHz
+  33          {
+  34   1        unsigned char i, j;
+  35   1      
+  36   1      
+  37   1        i = 2;
+  38   1        j = 199;
+  39   1        do
+  40   1        {
+  41   2          while (--j);
+  42   2        } while (--i);
+  43   1      }
+  44          
+  45          void DelayXms(u16 xms)
+  46          {
+  47   1        while((xms--)!=0)
+  48   1        {
+  49   2          Delay1ms(); 
+  50   2        }
+  51   1      }
+  52          
+  53             //设定待操作的硬盘寄存器函数
+  54          void SetRegAddress(u8 addr)
+C51 COMPILER V9.52.0.0   ATAPI6                                                            03/27/2018 22:42:43 PAGE 2   
+
+  55          {
+  56   1         switch(addr)
+  57   1         {
+  58   2           case DATA_REG:          CS1=1; CS0=0; DA2=0; DA1=0; DA0=0; break;
+  59   2      
+  60   2         case ERROR_REG:         CS1=1; CS0=0; DA2=0; DA1=0; DA0=1; break; 
+  61   2         case FEATURES:          CS1=1; CS0=0; DA2=0; DA1=0; DA0=1; break; 
+  62   2      
+  63   2         case SECTOR_COUNT_REG:  CS1=1; CS0=0; DA2=0; DA1=1; DA0=0; break;
+  64   2      
+  65   2         case SECTOR_NUMBER_REG: CS1=1; CS0=0; DA2=0; DA1=1; DA0=1; break;
+  66   2         case LBA_0_7:           CS1=1; CS0=0; DA2=0; DA1=1; DA0=1; break;
+  67   2      
+  68   2         case LBA_CYLINDER_L:    CS1=1; CS0=0; DA2=1; DA1=0; DA0=0; break; 
+  69   2         case LBA_8_15:          CS1=1; CS0=0; DA2=1; DA1=0; DA0=0; break;
+  70   2      
+  71   2         case LBA_CYLINDER_H:    CS1=1; CS0=0; DA2=1; DA1=0; DA0=1; break;
+  72   2         case LBA_16_23:         CS1=1; CS0=0; DA2=1; DA1=0; DA0=1; break;
+  73   2      
+  74   2         case DRIVE_HEAD:        CS1=1; CS0=0; DA2=1; DA1=1; DA0=0; break;
+  75   2         case LBA_24_27:         CS1=1; CS0=0; DA2=1; DA1=1; DA0=0; break;
+  76   2      
+  77   2         case COMMAND_STATUS:    CS1=1; CS0=0; DA2=1; DA1=1; DA0=1; break;
+  78   2      
+  79   2         case HDD_CONTROL:       CS1=0; CS0=1; DA2=1; DA1=1; DA0=0; break;
+  80   2      
+  81   2         default: break;
+  82   2         }
+  83   1        
+  84   1      }
+  85           //读取一个字节  低8位   
+  86          u8  HDDReadByte(u8 addr)
+  87          {
+  88   1        u8 value;
+  89   1        while(!IORDY);
+  90   1        SetRegAddress(addr);
+  91   1        HDDATAL=0xFF;
+  92   1        HDDATAH=0xFF;
+  93   1        ReadEN=0;
+  94   1        
+  95   1        value=ReversalData(HDDATAL);
+  96   1        
+  97   1        ReadEN=1;
+  98   1          
+  99   1          CS0=1;CS1=1;
+ 100   1        return value;
+ 101   1      }
+ 102          //写一个字节  低8位    
+ 103          void HDDWriteByte(u8 addr, u8 value)
+ 104          {
+ 105   1        while(!IORDY);
+ 106   1        SetRegAddress(addr);
+ 107   1        WriteEN=0;
+ 108   1      
+ 109   1        HDDATAL=ReversalData(value);
+ 110   1      
+ 111   1        WriteEN=1;
+ 112   1          CS0=1;CS1=1;
+ 113   1      }
+ 114            //获取硬盘状态寄存器内容
+ 115          u8 HDDReadStatus(void)
+ 116          {
+C51 COMPILER V9.52.0.0   ATAPI6                                                            03/27/2018 22:42:43 PAGE 3   
+
+ 117   1        u8 status;
+ 118   1        status=HDDReadByte(COMMAND_STATUS);
+ 119   1        return status;
+ 120   1      }
+ 121             // 判断硬盘是否忙 
+ 122          void HDDWaitBusy(void)
+ 123          {
+ 124   1        while(0x80&HDDReadStatus());
+ 125   1      }
+ 126            //对硬盘发送命令函数
+ 127          void HDDWriteCommand(u8 command)
+ 128          {
+ 129   1      
+ 130   1        HDDWriteByte(COMMAND_STATUS,command);
+ 131   1        HDDWaitBusy();
+ 132   1      }
+ 133             //设定要操作的硬盘的扇区地址
+ 134          void HDDWriteLBA(u32 LBA)
+ 135          {
+ 136   1      
+ 137   1        HDDWriteByte(LBA_24_27,(u8)(0xe0|(DRV0_DRV1?0x10:0x00)|(LBA>>24)));
+ 138   1        HDDWriteByte(LBA_16_23,(u8)(LBA>>16));
+ 139   1        HDDWriteByte(LBA_8_15,(u8)(LBA>>8));
+ 140   1        HDDWriteByte(LBA_0_7,(u8)(LBA));
+ 141   1      }
+ 142          
+ 143              //设定要操作多少个扇区 
+ 144          void HDDWriteSectorCount(u8 count)
+ 145          {
+ 146   1        HDDWriteByte(SECTOR_COUNT_REG,count);   
+ 147   1      }
+ 148            //硬盘初始化
+ 149          u8 HDD_Init(void)
+ 150          {
+ 151   1        
+ 152   1        HDDWriteByte(DRIVE_HEAD,0xE0|(DRV0_DRV1?0x10:0x00));
+ 153   1        HDDWaitBusy();
+ 154   1        
+ 155   1        HDDWriteByte(HDD_CONTROL,(1<<HOB)|(0<<SRST)|(1<<nIEN)|(0<<BIT_0));
+ 156   1        HDDWaitBusy();
+ 157   1      
+ 158   1        return 0;
+ 159   1      }
+ 160            //运行硬盘命令
+ 161          void HDRunning(void)
+ 162          {
+ 163   1        HDDWaitBusy();
+ 164   1        HDDWriteCommand(0xE1);  
+ 165   1      }
+ 166             //停止硬盘命令
+ 167          void HDStop(void)
+ 168          {
+ 169   1        HDDWaitBusy();
+ 170   1        HDDWriteCommand(0xE0);  
+ 171   1      }
+ 172            //读一个指定扇区内容到    SectorBuffer
+ 173          u8 ReadSector(u32 addr, u8 *SectorBuffer )
+ 174          {
+ 175   1        u16 i;
+ 176   1          HDDWaitBusy();
+ 177   1        HDDWriteSectorCount(1);
+ 178   1        HDDWriteLBA(addr);
+C51 COMPILER V9.52.0.0   ATAPI6                                                            03/27/2018 22:42:43 PAGE 4   
+
+ 179   1        HDDWriteCommand(HDD_Read_Sectors);
+ 180   1        SetRegAddress(DATA_REG);
+ 181   1        HDDATAL=0xFF;
+ 182   1        HDDATAH=0xFF;
+ 183   1      
+ 184   1        for(i=0;i<512;i++)
+ 185   1        {
+ 186   2          while(!IORDY);
+ 187   2          ReadEN=0;
+ 188   2        
+ 189   2          SectorBuffer[i]=ReversalData(HDDATAL);
+ 190   2          i++;
+ 191   2          SectorBuffer[i]=HDDATAH;
+ 192   2          ReadEN=1;
+ 193   2        }
+ 194   1      
+ 195   1        return 0;
+ 196   1      }
+ 197             //写 SectorBuffer内容到指定扇区
+ 198          u8 WriteSector(u32 addr, u8 *SectorBuffer)
+ 199          {
+ 200   1        u16 i;
+ 201   1      
+ 202   1        HDDWaitBusy();
+ 203   1        HDDWriteLBA(addr);
+ 204   1        HDDWriteSectorCount(1); 
+ 205   1        HDDWriteCommand(HDD_Write_Sectors);
+ 206   1        SetRegAddress(DATA_REG);
+ 207   1        for(i=0;i<512;i++)
+ 208   1        {
+ 209   2          while(!IORDY);
+ 210   2          WriteEN=0;
+ 211   2          HDDATAL=ReversalData(SectorBuffer[i]);
+ 212   2          i++;
+ 213   2          HDDATAH=SectorBuffer[i];
+ 214   2          WriteEN=1;
+ 215   2          HDDATAL=0xFF;
+ 216   2          HDDATAH=0xFF;
+ 217   2        }
+ 218   1        
+ 219   1        return 0; 
+ 220   1      }
+ 221            //读n个指定扇区内容到   SectorBuffer
+ 222          u8 ReadnSector(u32 addr, u8 *SectorBuffer, u32 nsec )
+ 223          {
+ 224   1         u32 i=0;
+ 225   1         for(i=0;i<nsec;i++)
+ 226   1         {
+ 227   2            ReadSector(addr+i,SectorBuffer);
+ 228   2          SectorBuffer+=512;  
+ 229   2         }
+ 230   1         return 0;
+ 231   1      }
+ 232             //写 SectorBuffer内容到指定的n个扇区
+ 233          u8 WritenSector(u32 addr, u8 *SectorBuffer, u32 nsec)
+ 234          {
+ 235   1         u32 i=0;
+ 236   1         for(i=0;i<nsec;i++)
+ 237   1         {
+ 238   2            WriteSector(addr+i,SectorBuffer);
+ 239   2          SectorBuffer+=512;  
+ 240   2         }
+C51 COMPILER V9.52.0.0   ATAPI6                                                            03/27/2018 22:42:43 PAGE 5   
+
+ 241   1         return 0;
+ 242   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1118    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      52
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
